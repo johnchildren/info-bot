@@ -5,7 +5,7 @@ module InfoBot.Modules where
 
 import           BasePrelude        hiding (putStrLn)
 import           Control.Lens
-import qualified Data.Map.Strict           as Map
+import qualified Data.Map.Strict    as Map
 import           Data.Text          as Text
 import           Data.Text.IO
 
@@ -39,11 +39,16 @@ jazzChan inbox outbox = do
           count <- modifyMVar countM (return . update)
           when (count == 2) victory)
 
-data LunchAction = Order Text | Ordered | NoAction
+data LunchAction
+  = Order Text
+  | Ordered
+  | NoAction
 
 lunchAction :: Text -> LunchAction
-lunchAction msg | "order" == lowerHead msg = Order $ onlyTail msg
-lunchAction msg | "ordered" == lowerHead msg = Ordered
+lunchAction msg
+  | "order" == lowerHead msg = Order $ onlyTail msg
+lunchAction msg
+  | "ordered" == lowerHead msg = Ordered
 lunchAction msg = NoAction
 
 lowerHead :: Text -> Text
@@ -54,15 +59,17 @@ onlyTail = Text.unwords . BasePrelude.tail . Text.words
 
 lunchChan :: Inbox -> Outbox -> IO ()
 lunchChan inbox outbox = do
-    ordersM <- newMVar Map.empty
-    withInbox inbox $ \line_ ->
-      case lunchAction (line_ ^. message) of
-        Order orderText -> do
-            putStrLn $ "got order" <> orderText
-            let update = Map.insert (line_ ^. username) orderText
-            modifyMVar_ ordersM (return . update)
-        Ordered -> do
-            putStrLn "dumping orders"
-            orders <- readMVar ordersM
-            writeOutbox outbox (Line (line_ ^. channel) "orders" (Text.pack $ show orders))
-        NoAction -> return ()
+  ordersM <- newMVar Map.empty
+  withInbox inbox $ \line_ ->
+    case lunchAction (line_ ^. message) of
+      Order orderText -> do
+        putStrLn $ "got order" <> orderText
+        let update = Map.insert (line_ ^. username) orderText
+        modifyMVar_ ordersM (return . update)
+      Ordered -> do
+        putStrLn "dumping orders"
+        orders <- readMVar ordersM
+        writeOutbox
+          outbox
+          (Line (line_ ^. channel) "orders" (Text.pack $ show orders))
+      NoAction -> return ()

@@ -95,5 +95,4 @@ withInbox inbox cont = do
       Right o -> void (cont o)
 
 writeOutbox :: (ToJSON a, Show a, MonadCSP m) => Outbox -> a -> m ()
-writeOutbox outbox msg =
-  writeChan_ outbox $ encode msg ^. strict
+writeOutbox outbox msg = writeChan_ outbox $ encode msg ^. strict
